@@ -24,6 +24,13 @@
  *
  */ 
 
+#ifdef WIN32
+#include <windows.h>
+#else
+#define _GNU_SOURCE // to get RTLD_DEFAULT
+#include <dlfcn.h> // for dlsym
+#endif
+
 /* various C stuff, mainly for reading files */
 #include <stdio.h>
 #include <stdlib.h>
@@ -1628,18 +1635,6 @@ static int pdlua_loader_pathwise
     return result;
 }
 
-
-#ifdef WIN32
-#include <windows.h>
-#else
-#define __USE_GNU // to get RTLD_DEFAULT
-#include <dlfcn.h> // for dlsym
-#ifndef RTLD_DEFAULT
-/* If RTLD_DEFAULT still isn't defined then just passing NULL will hopefully
-   do the trick. */
-#define RTLD_DEFAULT NULL
-#endif
-#endif
 
 /** Start the Lua runtime and register our loader hook. */
 #ifdef _WIN32

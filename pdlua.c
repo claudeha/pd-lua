@@ -1651,9 +1651,8 @@ void pdlua_setup(void)
     char*               pdluaver = "pdlua 0.9 (GPL) 2014-2018 Martin Peach et al., based on";
     char*               luaver = "lua 0.6~svn (GPL) 2008 Claude Heiland-Allen <claude@mathr.co.uk>";
     char                compiled[MAXPDSTRING];
-    char                luaversionStr[MAXPDSTRING];
-    const lua_Number    *luaversion = lua_version (NULL);
-    int                 lvm, lvl;
+    char                luacompileversionStr[MAXPDSTRING];
+    char                luarunversionStr[MAXPDSTRING];
 
 #ifndef BUILD_DATE
 # define BUILD_DATE __DATE__" "__TIME__
@@ -1662,21 +1661,6 @@ void pdlua_setup(void)
     snprintf(compiled, MAXPDSTRING-1, "pdlua: compiled for pd-%d.%d on %s",
              PD_MAJOR_VERSION, PD_MINOR_VERSION, BUILD_DATE);
 
-    lvm = (*luaversion)/100;
-    lvl = (*luaversion) - (100*lvm);
-    snprintf(luaversionStr, MAXPDSTRING-1, "Using lua version %d.%d", lvm, lvl);
-
-#if PD_MAJOR_VERSION==0 && PD_MINOR_VERSION<43
-    post(pdluaver);
-    post(luaver);
-    post(compiled);
-    post(luaversionStr);
-#else
-    logpost(NULL, 3, "%s", pdluaver);
-    logpost(NULL, 3, "%s", luaver);
-    logpost(NULL, 3, "%s", compiled);
-    logpost(NULL, 3, "%s", luaversionStr);
-#endif
     pdlua_proxyinlet_setup();
     PDLUA_DEBUG("pdlua pdlua_proxyinlet_setup done", 0);
     pdlua_proxyreceive_setup();
@@ -1688,6 +1672,34 @@ void pdlua_setup(void)
 #else // 5.2 style
     L = luaL_newstate();
 #endif // LUA_VERSION_NUM	< 502
+    {
+        const lua_Number luaversion =
+#if LUA_VERSION_NUM < 504
+            *
+#endif
+            lua_version(L);
+        int lvm, lvl;
+        lvm = (LUA_VERSION_NUM)/100;
+        lvl = (LUA_VERSION_NUM) - (100*lvm);
+        snprintf(luacompileversionStr, MAXPDSTRING-1, "Compiled for Lua version %d.%d", lvm, lvl);
+        lvm = (luaversion)/100;
+        lvl = (luaversion) - (100*lvm);
+        snprintf(luarunversionStr, MAXPDSTRING-1, "Using Lua version %d.%d", lvm, lvl);
+    }
+#if PD_MAJOR_VERSION==0 && PD_MINOR_VERSION<43
+    post(pdluaver);
+    post(luaver);
+    post(compiled);
+    post(luacompileversionStr);
+    post(luarunversionStr);
+#else
+    logpost(NULL, 3, "%s", pdluaver);
+    logpost(NULL, 3, "%s", luaver);
+    logpost(NULL, 3, "%s", compiled);
+    logpost(NULL, 3, "%s", luacompileversionStr);
+    logpost(NULL, 3, "%s", luarunversionStr);
+#endif
+
     PDLUA_DEBUG("pdlua lua_open done L = %p", L);
     luaL_openlibs(L);
     PDLUA_DEBUG("pdlua luaL_openlibs done", 0);

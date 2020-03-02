@@ -297,10 +297,13 @@ SHARED_TCL_LIB = $(wildcard lib$(LIBRARY_NAME).tcl)
 
 all: $(SOURCES:.c=.$(EXTENSION)) $(SHARED_LIB)
 
-%.o: %.c
-	$(CC) $(ALL_CFLAGS) -o $@ -c $<
+%.32.o: %.c
+	$(CC) $(ALL_CFLAGS) -o $@ -c $< -DPD_FLOATSIZE=32
 
-%.$(EXTENSION): %.o $(SHARED_LIB)
+%.64.o: %.c
+	$(CC) $(ALL_CFLAGS) -o $@ -c $< -DPD_FLOATSIZE=64
+
+%.$(EXTENSION): %.32.o %.64.o $(SHARED_LIB)
 	$(CC) $(ALL_LDFLAGS) -o $@ $^ $(ALL_LIBS)
 	chmod a-x $@
 
@@ -372,9 +375,11 @@ install-unittests:
 		done
 
 clean:
-	-rm -f -- $(SOURCES:.c=.o) $(SOURCES_LIB:.c=.o) $(SHARED_SOURCE:.c=.o)
+	-rm -f -- $(SOURCES:.c=.32.o) $(SOURCES_LIB:.c=.32.o) $(SHARED_SOURCE:.c=.32.o)
+	-rm -f -- $(SOURCES:.c=.64.o) $(SOURCES_LIB:.c=.64.o) $(SHARED_SOURCE:.c=.64.o)
 	-rm -f -- $(SOURCES:.c=.$(EXTENSION))
-	-rm -f -- $(LIBRARY_NAME).o
+	-rm -f -- $(LIBRARY_NAME).32.o
+	-rm -f -- $(LIBRARY_NAME).64.o
 	-rm -f -- $(LIBRARY_NAME).$(EXTENSION)
 	-rm -f -- $(SHARED_LIB)
 

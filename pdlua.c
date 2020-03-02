@@ -57,6 +57,13 @@
 #include "m_pd.h"
 #include "s_stuff.h" // for sys_register_loader()
 #include "m_imp.h" // for struct _class
+typedef t_class *(*t_class_new)(t_symbol *, t_newmethod, t_method, size_t, int, t_atomtype, ...);
+t_class_new pdlua_class_new_wrapper; // must not be static
+#ifdef class_new
+#undef class_new
+#endif
+#define class_new pdlua_class_new_wrapper
+
 /* BAD: support for Pd < 0.41 */
 
 #if PD_MAJOR_VERSION == 0
@@ -1635,12 +1642,14 @@ static int pdlua_loader_pathwise
     return result;
 }
 
-
 /** Start the Lua runtime and register our loader hook. */
-#ifdef _WIN32
-__declspec(dllexport)
-#endif 
-void pdlua_setup(void)
+#if PD_FLOATSIZE == 64
+void pdlua_setup32(void); // must not be static
+void pdlua_setup64(void)  // must not be static
+#else
+void pdlua_setup64(void); // must not be static
+void pdlua_setup32(void)  // must not be static
+#endif
 {
     char                pd_lua_path[MAXPDSTRING];
     t_pdlua_readerdata  reader;
@@ -1760,5 +1769,42 @@ void pdlua_setup(void)
       post("pdlua: using JavaScript interface (Pd-l2ork nw.js version)");
 
 }
+
+#if PD_FLOATSIZE == 32
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+extern void pdlua_setup(void)
+{
+#ifdef class_new
+#undef class_new
+#endif
+#ifdef class_new64
+#undef class_new64
+#endif
+#ifdef WIN32
+    t_class_new class_new64_wrapper = (void*)GetProcAddress(GetModuleHandle("pd.dll"), "class_new64");
+#else
+    t_class_new class_new64_wrapper = dlsym(RTLD_DEFAULT, "class_new64");
+#endif
+    t_class *probe32 = class_new          (gensym("pdlua floatsize probe 32"), 0, 0, 0, 0, 0);
+    t_class *probe64 = class_new64_wrapper
+                     ? class_new64_wrapper(gensym("pdlua floatsize probe 64"), 0, 0, 0, 0, 0)
+                     : 0;
+    if (probe32 && ! probe64)
+    {
+        pdlua_class_new_wrapper = class_new;
+        pdlua_setup32();
+        return;
+    }
+    if (! probe32 && probe64)
+    {
+        pdlua_class_new_wrapper = class_new64_wrapper;
+        pdlua_setup64();
+        return;
+    }
+    error("pdlua: could not detect float size of this Pd");
+}
+#endif
 
 /* EOF */

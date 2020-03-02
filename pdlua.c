@@ -1657,8 +1657,8 @@ void pdlua_setup(void)
 # define BUILD_DATE __DATE__" "__TIME__
 #endif
 
-    snprintf(compiled, MAXPDSTRING-1, "pdlua: compiled for pd-%d.%d on %s",
-             PD_MAJOR_VERSION, PD_MINOR_VERSION, BUILD_DATE);
+    snprintf(compiled, MAXPDSTRING-1, "pdlua: compiled for pd-%d.%d (%dbit float size) on %s",
+             PD_MAJOR_VERSION, PD_MINOR_VERSION, PD_FLOATSIZE, BUILD_DATE);
 
     lvm = (*luaversion)/100;
     lvl = (*luaversion) - (100*lvm);
